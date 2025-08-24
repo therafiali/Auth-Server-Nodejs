@@ -1,0 +1,36 @@
+{
+  "name": "auth-server-nodejs",
+  "version": "1.0.0",
+  "description": "Production-ready Node.js Express authentication server with Supabase",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "node tests/run-tests.js",
+    "test:all": "node tests/run-tests.js && node tests/test-refresh.js && node tests/test-rls.js && node tests/test-login.js ",
+    "test:refresh": "node tests/test-refresh.js",
+    "test:rls": "node tests/test-rls.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "authentication",
+    "supabase",
+    "jwt",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "axios": "^1.6.0",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
