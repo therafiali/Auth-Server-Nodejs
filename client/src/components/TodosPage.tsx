@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { logoutUser } from '../utils/api';
+import React, { useState, useEffect } from "react";
+import { logoutUser } from "../utils/api";
+import { todosApi } from "@/utils/supabase";
 
 interface Todo {
   id: string;
@@ -12,65 +13,109 @@ interface Todo {
 
 const TodosPage = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodo, setNewTodo] = useState('');
+  const [newTodo, setNewTodo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        // First, try to get the access token from the server
+        const response = await fetch('http://localhost:3000/auth/token', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const { setAccessToken } = await import('../utils/supabase');
+          setAccessToken(data.token);
+          console.log('🔐 Access token set from server');
+        } else {
+          // If no token available, redirect to login
+          window.location.href = "/";
+          return;
+        }
+        
+        const todos = await todosApi.getTodos();
+        setTodos(todos);
+        setMessage(null);
+      } catch (error) {
+        console.error('Error fetching todos:', error);
+        if (error instanceof Error && error.message.includes('No authentication token available')) {
+          // Redirect to login if no token available
+          window.location.href = "/";
+        } else {
+          setMessage({
+            type: "error",
+            text: `Failed to fetch todos: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
     fetchTodos();
   }, []);
 
-  const fetchTodos = async () => {
-    try {
-      console.log('🔍 Starting fetchTodos...');
-      
-      const response = await fetch('http://localhost:3000/todos', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        credentials: 'include',
-      });
+  // const fetchTodos = async () => {
+  //   try {
+  //     console.log("🔍 Starting fetchTodos...");
 
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response headers:', response.headers);
-      console.log('🔍 Response ok:', response.ok);
+  //     const response = await fetch("http://localhost:3000/todos", {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Cache-Control": "no-cache",
+  //       },
+  //       credentials: "include",
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Fetching todos...', data);
-        setTodos(data.todos || data.data || []);
-      } else if (response.status === 401) {
-        console.log('🔍 Unauthorized - redirecting to login');
-        window.location.href = '/';
-      } else {
-        const errorData = await response.json();
-        console.log('🔍 Failed to fetch todos:', errorData);
-        setMessage({
-          type: 'error',
-          text: `Failed to fetch todos: ${response.status}`
-        });
-      }
-    } catch (error) {
-      console.log('🔍 Failed to fetch todos:', error);
-      setMessage({
-        type: 'error',
-        text: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     console.log("🔍 Response status:", response.status);
+  //     console.log("🔍 Response headers:", response.headers);
+  //     console.log("🔍 Response ok:", response.ok);
 
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       console.log("🔍 Fetching todos...", data);
+  //       setTodos(data.todos || data.data || []);
+  //     } else if (response.status === 401) {
+  //       console.log("🔍 Unauthorized - redirecting to login");
+  //       window.location.href = "/";
+  //     } else {
+  //       const errorData = await response.json();
+  //       console.log("🔍 Failed to fetch todos:", errorData);
+  //       setMessage({
+  //         type: "error",
+  //         text: `Failed to fetch todos: ${response.status}`,
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.log("🔍 Failed to fetch todos:", error);
+  //     setMessage({
+  //       type: "error",
+  //       text: `Network error: ${
+  //         error instanceof Error ? error.message : "Unknown error"
+  //       }`,
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  console.log('🔍 Todos:', todos);
+  console.log("🔍 Todos:", todos);
   const handleLogout = async () => {
     try {
       await logoutUser();
       // Redirect to login page
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -79,39 +124,18 @@ const TodosPage = () => {
     if (!newTodo.trim()) return;
 
     try {
-      const response = await fetch('http://localhost:3000/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ title: newTodo }),
-      });
-
-      console.log('🔍 Adding todo...', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Todo added successfully:', data);
-        setTodos(prev => [...prev, data.data || data.todo]);
-        setNewTodo('');
-        setMessage({
-          type: 'success',
-          text: 'Todo added successfully!'
-        });
-      } else {
-        const errorData = await response.json();
-        console.log('🔍 Failed to add todo:', errorData);
-        setMessage({
-          type: 'error',
-          text: 'Failed to add todo'
-        });
-      }
-    } catch (error) {
-      console.log('🔍 Add todo error:', error);
+      const todo = await todosApi.addTodo(newTodo);
+      setTodos((prev) => [todo, ...prev]);
+      setNewTodo("");
       setMessage({
-        type: 'error',
-        text: 'Network error'
+        type: "success",
+        text: "Todo added successfully!",
+      });
+    } catch (error) {
+      console.error('Error adding todo:', error);
+      setMessage({
+        type: "error",
+        text: `Failed to add todo: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
   };
@@ -141,11 +165,13 @@ const TodosPage = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+          <div
+            className={`mb-6 p-4 rounded-lg ${
+              message.type === "success"
+                ? "bg-green-50 text-green-800 border border-green-200"
+                : "bg-red-50 text-red-800 border border-red-200"
+            }`}
+          >
             {message.text}
           </div>
         )}
@@ -173,12 +199,17 @@ const TodosPage = () => {
         <div className="bg-white rounded-lg shadow-sm">
           {todos.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              <p className="text-lg">No todos yet. Add your first todo above!</p>
+              <p className="text-lg">
+                No todos yet. Add your first todo above!
+              </p>
             </div>
           ) : (
             <ul className="divide-y divide-gray-200">
               {todos.map((todo) => (
-                <li key={todo.id} className="p-6 flex items-center justify-between">
+                <li
+                  key={todo.id}
+                  className="p-6 flex items-center justify-between"
+                >
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -186,7 +217,13 @@ const TodosPage = () => {
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       readOnly
                     />
-                    <span className={`ml-3 text-lg ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                    <span
+                      className={`ml-3 text-lg ${
+                        todo.completed
+                          ? "line-through text-gray-500"
+                          : "text-gray-900"
+                      }`}
+                    >
                       {todo.title}
                     </span>
                   </div>

@@ -29,6 +29,14 @@ router.post('/login', loginController.login);
 router.post('/refresh', refreshController.refreshToken);
 router.post('/logout', refreshController.logout);
 
+// Get user's JWT token for Supabase authentication
+router.get('/auth/token', verifyToken, (req, res) => {
+  res.json({
+    success: true,
+    token: req.user.accessToken
+  });
+});
+
 // Protected routes (require JWT)
 router.get('/todos', verifyToken, todosController.getTodos);
 router.post('/todos', verifyToken, todosController.createTodo);

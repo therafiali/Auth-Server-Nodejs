@@ -27,7 +27,8 @@ const verifyToken = (req, res, next) => {
       id: decoded.sub,        // Use 'sub' from JWT (will be UUID format)
       email: decoded.email,
       username: decoded.username,
-      role: decoded.role
+      role: decoded.role,
+      accessToken: token      // Store the original token for Supabase authentication
     };
     
     next();

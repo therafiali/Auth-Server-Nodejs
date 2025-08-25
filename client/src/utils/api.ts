@@ -83,6 +83,13 @@ export const loginUser = async (credentials: { email: string; password: string }
   
   console.log('🔐 Login result:', result);
   
+  // If login successful, set the access token for Supabase
+  if (result.success && result.data?.token) {
+    const { setAccessToken } = await import('./supabase');
+    setAccessToken(result.data.token);
+    console.log('🔐 Access token set for Supabase');
+  }
+  
   // Check cookies after login
   setTimeout(() => {
     console.log('🍪 Cookies after login attempt:', document.cookie);
@@ -101,8 +108,17 @@ export const refreshToken = async (refreshToken: string): Promise<ApiResponse> =
 
 // Logout user
 export const logoutUser = async (): Promise<ApiResponse> => {
-  return await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
+  const result = await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
     method: 'POST',
   });
+  
+  // Clear the access token for Supabase
+  if (result.success) {
+    const { setAccessToken } = await import('./supabase');
+    setAccessToken(null);
+    console.log('🔐 Access token cleared for Supabase');
+  }
+  
+  return result;
 };
 
