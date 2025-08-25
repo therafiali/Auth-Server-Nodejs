@@ -46,8 +46,9 @@ const COOKIES = {
   OPTIONS: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/'
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    path: '/',
+    domain: process.env.NODE_ENV === 'production' ? undefined : undefined
   }
 };
 

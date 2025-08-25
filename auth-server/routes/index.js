@@ -13,6 +13,16 @@ router.get('/health', utilsController.health);
 router.get('/test-db', utilsController.testDb);
 router.get('/users', utilsController.getUsers);
 
+// Test CORS endpoint
+router.get('/test-cors', (req, res) => {
+  res.json({
+    success: true,
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    cookies: req.headers.cookie ? 'Present' : 'Missing'
+  });
+});
+
 // Auth routes
 router.post('/signup', signupController.signup);
 router.post('/login', loginController.login);
